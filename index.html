@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>EcoHistory — 역사로 배우는 생태·환경 통합 플랫폼 (Advanced)</title>
+
+<!-- Chart.js CDN (시각화) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+  :root{
+    --bg:#f6f8f9; --card:#ffffff; --accent:#1e6f5c; --accent-2:#52b788; --muted:#6b7280;
+  }
+  *{box-sizing:border-box}
+  body{font-family:Inter, "Noto Sans KR", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin:0; background:var(--bg); color:#111;}
+  header{background:linear-gradient(135deg,#124f44,#2b8f7e); color:white; padding:28px 20px; display:flex; align-items:center; justify-content:space-between; gap:20px;}
+  header .brand{display:flex; align-items:center; gap:12px}
+  header h1{font-size:1.25rem;margin:0}
+  header p{margin:0; opacity:.9; font-size:.9rem}
+  main{display:grid; grid-template-columns: 260px 1fr 340px; gap:20px; padding:24px; max-width:1400px; margin:0 auto;}
+  /* Left nav */
+  .sidebar{background:var(--card); border-radius:12px; padding:18px; box-shadow:0 6px 18px rgba(16,24,40,.06);}
+  .toc h3{margin:0 0 10px 0; color:var(--accent)}
+  .nav-list{list-style:none; padding-left:0; margin:0}
+  .nav-list li{margin:8px 0}
+  .nav-link{display:block; padding:8px 10px; border-radius:8px; color:#123; text-decoration:none; cursor:pointer}
+  .nav-link:hover{background:#f0fdf6}
+
+  /* center content */
+  .content{background:var(--card); border-radius:12px; padding:24px; min-height:60vh; box-shadow:0 6px 18px rgba(16,24,40,.06); overflow:auto;}
+  .section{margin-bottom:28px}
+  .section h2{color:var(--accent); margin-bottom:12px}
+  .lead{color:var(--muted); margin-bottom:12px}
+
+  /* right panel */
+  .rightpanel{background:var(--card); border-radius:12px; padding:18px; box-shadow:0 6px 18px rgba(16,24,40,.06); display:flex; flex-direction:column; gap:12px}
+  .userbox{display:flex; gap:12px; align-items:center}
+  .avatar{width:48px;height:48px;border-radius:50%; background:linear-gradient(135deg,#8dd3b4,#1e6f5c); display:flex; align-items:center; justify-content:center; color:white; font-weight:700}
+  .small{font-size:.85rem;color:var(--muted)}
+  .btn{display:inline-block;background:var(--accent); color:white;padding:8px 12px;border-radius:8px;border:none; cursor:pointer;font-weight:600}
+  .btn.ghost{background:transparent;color:var(--accent); border:1px solid #e6f3ee}
+  .muted{color:var(--muted); font-size:.9rem}
+  input, textarea, select{width:100%; padding:10px; border-radius:8px; border:1px solid #e6eef0; font-size:1rem}
+  .card-row{display:flex; gap:12px}
+  .stat{background:#f8fffb;padding:12px;border-radius:10px;text-align:center;flex:1}
+
+  /* content item */
+  .case-card{border-left:4px solid var(--accent-2); padding:14px; margin-bottom:10px; background:#fbfffb;border-radius:8px}
+  .case-card h3{margin:0 0 6px 0}
+  .case-meta{font-size:.85rem;color:var(--muted); margin-bottom:8px}
+
+  /* quiz */
+  .quiz-opt{display:block; padding:10px; margin:8px 0; border-radius:8px; border:1px solid #e6eef0; background:white; cursor:pointer}
+  .quiz-opt.correct{background:#e6fff1; border-color: #b7f0d0}
+  .quiz-opt.wrong{background:#fff1f0; border-color:#f0b7b7}
+
+  /* forms */
+  .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .footer-note{font-size:.85rem;color:var(--muted)}
+
+  /* responsive */
+  @media (max-width:1050px){
+    main{grid-template-columns:1fr; padding:16px}
+    .rightpanel{order:3}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div style="width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,#8dd3b4,#1e6f5c);display:flex;align-items:center;justify-content:center;font-weight:800">EH</div>
+    <div>
+      <h1>EcoHistory — 시간의 발자취, 기후의 경고</h1>
+      <p>역사 기반 환경 교육 · 실천 · 데이터 플랫폼 (로컬 프로토타입)</p>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:12px; align-items:center">
+    <div id="appClock" class="small" aria-live="polite">--</div>
+    <button id="exportBtn" class="btn ghost" title="데이터 내보내기">데이터 내보내기</button>
+    <button id="importBtn" class="btn ghost" title="데이터 가져오기">데이터 가져오기</button>
+    <div id="authArea"></div>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT: NAV / TOC -->
+  <aside class="sidebar">
+    <div class="toc">
+      <h3>목차</h3>
+      <ul class="nav-list">
+        <li><a class="nav-link" data-target="overview">프로젝트 개요</a></li>
+        <li><a class="nav-link" data-target="problem">문제의식</a></li>
+        <li><a class="nav-link" data-target="idea">핵심 아이디어</a></li>
+        <li><a class="nav-link" data-target="learn">사례 학습</a></li>
+        <li><a class="nav-link" data-target="activity">학습 활동</a></li>
+        <li><a class="nav-link" data-target="mission">실천 기록</a></li>
+        <li><a class="nav-link" data-target="quiz">퀴즈 & 평가</a></li>
+        <li><a class="nav-link" data-target="analytics">통계</a></li>
+        <li><a class="nav-link" data-target="admin">관리자(CMS)</a></li>
+      </ul>
+    </div>
+
+    <hr style="margin:14px 0;border:none;border-top:1px solid #eef2f3" />
+
+    <div>
+      <h3>검색 & 필터</h3>
+      <input id="searchInput" placeholder="사례·퀴즈 검색..." />
+      <div style="margin-top:10px;">
+        <label class="small">필터</label>
+        <select id="filterSelect">
+          <option value="all">전체</option>
+          <option value="drought">가뭄 사례</option>
+          <option value="deforestation">산림/벌채</option>
+          <option value="policy">제도적 대응</option>
+        </select>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CENTER: MAIN CONTENT -->
+  <section class="content" id="mainContent">
+    <!-- sections will be rendered here by JS SPA router -->
+  </section>
+
+  <!-- RIGHT: USER / STATS -->
+  <aside class="rightpanel">
+    <div class="userbox">
+      <div id="userAvatar" class="avatar">G</div>
+      <div>
+        <div id="userName" style="font-weight:700">비로그인</div>
+        <div class="small" id="userRole">게스트</div>
+      </div>
+    </div>
+
+    <div class="card-row">
+      <div class="stat">
+        <div class="small">포인트</div>
+        <div style="font-size:1.4rem" id="pointVal">0</div>
+      </div>
+      <div class="stat">
+        <div class="small">등급</div>
+        <div style="font-size:1.1rem" id="rankVal">Eco Starter</div>
+      </div>
+    </div>
+
+    <div>
+      <h4 style="margin:8px 0 6px 0">미션 요약</h4>
+      <div id="miniMissions" style="min-height:80px" class="muted">아직 없음</div>
+    </div>
+
+    <div>
+      <h4 style="margin:8px 0 6px 0">주간 활동(예시)</h4>
+      <canvas id="activityChart" width="300" height="180"></canvas>
+    </div>
+
+    <div>
+      <h4 style="margin:8px 0 6px 0">로컬 유저 목록</h4>
+      <div id="localUsers" class="muted">로딩...</div>
+    </div>
+
+    <div style="margin-top:6px">
+      <button id="newMissionQuick" class="btn">빠른 미션 추가</button>
+    </div>
+
+    <div style="margin-top:8px" class="footer-note">
+      프로토타입: 데이터는 로컬 브라우저에만 저장됩니다. (IndexedDB)
+    </div>
+  </aside>
+</main>
+
+<!-- TEMPLATES (for SPA render) -->
+<template id="tpl-overview">
+  <div class="section" id="overview">
+    <h2>프로젝트 개요</h2>
+    <p class="lead">EcoHistory는 역사적 사례를 통해 생태·환경 위기의 원인과 대응을 배우고, 개인 실천을 통해 사회적 변화를 유도하는 교육·참여 플랫폼입니다.</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+      <div class="card">
+        <h3>목표</h3>
+        <ul>
+          <li>역사 사례 분석을 통한 인과 관계 학습</li>
+          <li>참여형 실천으로 행동 변화 유도</li>
+          <li>데이터 기반 리더보드와 교육 자료 제공</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>핵심 기능 요약</h3>
+        <ol>
+          <li>학습 카드(사례) · 퀴즈 · 실천 미션</li>
+          <li>포인트·등급 시스템 · 리더보드</li>
+          <li>관리자 CMS(콘텐츠 업로드/편집)</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-problem">
+  <div class="section" id="problem"><h2>1) 문제의식</h2>
+    <p class="lead">주목하는 문제: 기후변화(온난화), 산림파괴, 물 부족, 생물다양성 손실 등. 이들 문제는 사회·경제·정치적 영향을 미쳐 문명적 위기를 초래할 수 있습니다.</p>
+    <div class="card">
+      <h3>왜 이 문제에 주목했는가?</h3>
+      <p>역사적으로 환경 변화는 문명의 안정성에 직접적 영향을 주었습니다. 과거 사례를 분석하면 현재 위기의 구조적 원인을 이해할 수 있습니다.</p>
+    </div>
+    <div class="card">
+      <h3>해결의 의미</h3>
+      <p>해결은 단순한 환경 복구를 넘어서 사회 제도·경제·문화의 전환을 요구합니다. 역사적 통찰은 이 전환의 방향성을 제시할 수 있습니다.</p>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-idea">
+  <div class="section" id="idea"><h2>2) 핵심 아이디어</h2>
+    <div class="card">
+      <h3>제안 솔루션</h3>
+      <p>“역사 기반 학습 + 실천형 플랫폼”을 통해 학습(사례와 퀴즈)을 제공하고, 개인의 실천 기록을 포인트로 연결하여 지속적인 참여를 유도합니다.</p>
+    </div>
+    <div class="card">
+      <h3>역사 전공의 기여</h3>
+      <p>사료 해석, 비교사적 분석, 원인-결과의 서사 구성 기술을 통해 정책적·사회적 교훈을 추출합니다.</p>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-learn">
+  <div class="section" id="learn"><h2>3) 사례 학습</h2>
+    <div id="casesList"></div>
+  </div>
+</template>
+
+<template id="tpl-activity">
+  <div class="section" id="activity"><h2>4) 학습 활동</h2>
+    <ol>
+      <li><b>탐구:</b> 마야 붕괴의 생태적 원인을 3가지 이상 찾아 정리하세요.</li>
+      <li><b>비교:</b> 과거와 오늘의 기후위기에서 공통적 사회적 취약점은 무엇인가요?</li>
+      <li><b>실천계획 작성:</b> 학교·가정에서 실행 가능한 3단계 실천 계획을 수립하세요.</li>
+    </ol>
+    <div style="margin-top:12px">
+      <label class="small">작성 후 저장(개인 노트)</label>
+      <textarea id="activityNote" rows="6" placeholder="탐구 내용을 적어보세요..."></textarea>
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button id="saveNote" class="btn">노트 저장</button>
+        <button id="clearNote" class="btn ghost">지우기</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-mission">
+  <div class="section" id="missionPage"><h2>5) 실천 기록</h2>
+    <p class="lead">실천을 기록하고 포인트를 모아 등급을 올리세요. (포인트로 가상의 상점/보상 교환 예정)</p>
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px">
+      <input id="missionTitle" placeholder="미션 제목 ex: 텀블러 사용하기" />
+      <select id="missionType"><option value="general">일반</option><option value="recycle">재활용</option><option value="energy">에너지 절약</option></select>
+      <button id="addMissionBtn" class="btn">미션 추가</button>
+    </div>
+
+    <div id="missionList"></div>
+  </div>
+</template>
+
+<template id="tpl-quiz">
+  <div class="section" id="quizPage"><h2>6) 퀴즈 & 평가</h2>
+    <p class="lead">학습 내용 이해도를 확인하는 퀴즈입니다. 정답 시 포인트를 획득합니다.</p>
+    <div id="quizBank"></div>
+  </div>
+</template>
+
+<template id="tpl-analytics">
+  <div class="section" id="analytics"><h2>7) 통계 & 시각화</h2>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div class="card">
+        <h3>포인트 분포</h3>
+        <canvas id="pointsChart" width="400" height="220"></canvas>
+      </div>
+      <div class="card">
+        <h3>주간 활동</h3>
+        <canvas id="weeklyChart" width="400" height="220"></canvas>
+      </div>
+    </div>
+
+    <div style="margin-top:12px" class="card">
+      <h3>데이터 관리</h3>
+      <p class="muted">로컬 데이터를 파일로 내보내거나 가져올 수 있습니다. (백업 용도)</p>
+      <div style="display:flex; gap:8px; margin-top:8px">
+        <button id="exportBtn2" class="btn ghost">내보내기</button>
+        <button id="importBtn2" class="btn ghost">가져오기</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-admin">
+  <div class="section" id="adminPage"><h2>관리자(CMS)</h2>
+    <p class="lead">콘텐츠(사례/퀴즈)를 추가·편집·삭제할 수 있습니다. 관리자 권한으로만 사용하세요.</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+      <div class="card">
+        <h3>사례 추가</h3>
+        <input id="caseTitle" placeholder="사례 제목" />
+        <textarea id="caseDesc" rows="4" placeholder="사례 설명"></textarea>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <select id="caseTag"><option value="drought">가뭄</option><option value="deforestation">산림/벌채</option><option value="policy">제도적 대응</option></select>
+          <button id="createCase" class="btn">생성</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>퀴즈 추가</h3>
+        <input id="qText" placeholder="질문 텍스트" />
+        <input id="qOpt1" placeholder="옵션 1" />
+        <input id="qOpt2" placeholder="옵션 2" />
+        <input id="qOpt3" placeholder="옵션 3" />
+        <input id="qOpt4" placeholder="옵션 4" />
+        <select id="qCorrect">
+          <option value="0">옵션1 정답</option>
+          <option value="1">옵션2 정답</option>
+          <option value="2">옵션3 정답</option>
+          <option value="3">옵션4 정답</option>
+        </select>
+        <div style="margin-top:8px"><button id="createQuiz" class="btn">퀴즈 생성</button></div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px" id="adminLists"></div>
+  </div>
+</template>
+
+<script>
+/* ======================================================
+   Advanced Single-file SPA: EcoHistory (client-side prototype)
+   Features:
+   - IndexedDB (promisified wrapper) for persistence
+   - SPA router + template rendering
+   - User accounts (local), admin toggle
+   - Content CRUD (cases, quizzes)
+   - Missions & Points (multi-user local leaderboard)
+   - Charts (Chart.js) for visualization
+   - Export / Import JSON
+   - Search / Filter / Quick actions
+   - Comments incl. code for educational clarity
+   ====================================================== */
+
+/* -------------------------
+   Minimal IndexedDB wrapper
+   ------------------------- */
+const DBNAME = 'EcoHistoryDB_v1', STORE = 'appstate';
+function idbOpen(){
+  return new Promise((res, rej)=>{
+    const r = indexedDB.open(DBNAME, 1);
+    r.onupgradeneeded = e => {
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains(STORE)){
+        const os = db.createObjectStore(STORE, {keyPath:'id'});
+        // initial data will be inserted later
+      }
+    };
+    r.onsuccess = e => res(e.target.result);
+    r.onerror = e => rej(e.target.error);
+  });
+}
+async function idbGetAll(){
+  const db = await idbOpen();
+  return new Promise((res, rej)=>{
+    const tx = db.transaction(STORE,'readonly');
+    const store = tx.objectStore(STORE);
+    const req = store.getAll();
+    req.onsuccess = ()=> res(req.result);
+    req.onerror = ()=> rej(req.error);
+  });
+}
+async function idbPut(obj){
+  const db = await idbOpen();
+  return new Promise((res, rej)=>{
+    const tx = db.transaction(STORE,'readwrite');
+    const store = tx.objectStore(STORE);
+    const req = store.put(obj);
+    req.onsuccess = ()=> res(req.result);
+    req.onerror = ()=> rej(req.error);
+  });
+}
+async function idbDelete(id){
+  const db = await idbOpen();
+  return new Promise((res, rej)=>{
+    const tx = db.transaction(STORE,'readwrite');
+    const store = tx.objectStore(STORE);
+    const req = store.delete(id);
+    req.onsuccess = ()=> res(true);
+    req.onerror = ()=> rej(req.error);
+  });
+}
+
+/* -------------------------
+   Default seed data (if empty)
+   ------------------------- */
+const DEFAULT_APP = {
+  id: 'app',
+  users: [
+    {id:'admin', name:'Administrator', passHash: sha256('admin123'), role:'admin', points:0, missions:[], notes:''},
+    {id:'guest', name:'Guest', passHash: null, role:'guest', points:0, missions:[], notes:''}
+  ],
+  cases: [
+    {id: genId('case'), title:'마야 문명의 붕괴 (9세기)', desc:'산림 남벌과 가뭄, 인구압력의 결합으로 생태적 취약성이 빚어낸 붕괴 사례입니다.', tag:'deforestation', created:Date.now()},
+    {id: genId('case'), title:'조선 후기 소빙기 (17세기)', desc:'기후 하강으로 인한 흉년과 사회적 영향, 산림보호 정책으로의 대응 사례.', tag:'policy', created:Date.now()},
+    {id: genId('case'), title:'메소포타미아의 토양 염류화 (기원전)', desc:'과도한 관개로 인한 토양 염류화가 생산성 감소와 문명 쇠퇴를 초래.', tag:'drought', created:Date.now()},
+  ],
+  quizzes: [
+    {id: genId('q'), q:'마야 문명의 붕괴와 관련 없는 요인은?', opts:['산림 남벌','가뭄','화석연료 사용 증가','인구 과잉'], correct:2},
+    {id: genId('q'), q:'산업혁명이 초래한 주요 환경 문제는?', opts:['탄소배출 증가','산림 보호 강화','물 부족 감소','자연 회복'], correct:0}
+  ],
+  activityLog: [] // events for charting
+};
+
+/* -------------------------
+   Utilities
+   ------------------------- */
+function genId(prefix='id'){ return `${prefix}_${Math.random().toString(36).slice(2,9)}`; }
+function nowStr(){ return new Date().toLocaleString(); }
+function sha256(msg){
+  // simple hash using SubtleCrypto (async) but for ease we use synchronous fallback
+  // NOTE: for production use, do not store plaintext passwords. This is educational.
+  let hash = 0;
+  for(let i=0;i<msg.length;i++) hash = ((hash<<5)-hash) + msg.charCodeAt(i);
+  return 'h'+Math.abs(hash).toString(36);
+}
+
+/* -------------------------
+   App state (in-memory)
+   ------------------------- */
+let APP = null; // loaded from IndexedDB
+let CURRENT_USER = null;
+
+/* -------------------------
+   Init app (load or seed)
+   ------------------------- */
+async function initApp(){
+  // open DB, check seed
+  try{
+    const all = await idbGetAll();
+    if(all.length === 0){
+      // seed
+      await idbPut(DEFAULT_APP);
+      APP = DEFAULT_APP;
+    } else {
+      APP = all[0]; // single row store
+    }
+    // ensure arrays exist
+    APP.users = APP.users || [];
+    APP.cases = APP.cases || [];
+    APP.quizzes = APP.quizzes || [];
+    APP.activityLog = APP.activityLog || [];
+    // set default current user = guest if exists
+    CURRENT_USER = APP.users.find(u=>u.id === 'guest') || APP.users[0];
+    renderAuthArea();
+    renderRightPanel();
+    router(); // render main content
+    startClock();
+    setupUI();
+    bootstrapCharts();
+  } catch(e){
+    console.error('DB init err', e);
+  }
+}
+
+/* -------------------------
+   Router & Template render
+   ------------------------- */
+const templates = {};
+document.querySelectorAll('template').forEach(t=>templates[t.id]=t);
+
+function router(){
+  const target = location.hash.replace('#','') || 'overview';
+  renderSection(target);
+  highlightNav(target);
+}
+
+window.addEventListener('hashchange', router);
+
+function highlightNav(target){
+  document.querySelectorAll('.nav-link').forEach(a=>{
+    a.style.background='transparent';
+  });
+  const el = document.querySelector(`.nav-link[data-target="${target}"]`);
+  if(el) el.style.background='#f0fdf6';
+}
+
+function renderSection(id){
+  const main = document.getElementById('mainContent');
+  main.innerHTML = '';
+  if(templates['tpl-'+id]){
+    const node = templates['tpl-'+id].content.cloneNode(true);
+    main.appendChild(node);
+  } else {
+    // fallback
+    main.innerHTML = `<div class="section"><h2>404</h2><p>존재하지 않는 페이지입니다.</p></div>`;
+  }
+  // after rendering we may need to attach additional behaviors
+  postRender(id);
+}
+
+/* -------------------------
+   Post-render hooks
+   ------------------------- */
+function postRender(id){
+  if(id === 'learn') renderCasesList();
+  if(id === 'mission') renderMissionPage();
+  if(id === 'activity'){
+    // load note
+    document.getElementById('activityNote').value = CURRENT_USER.notes || '';
+    document.getElementById('saveNote').addEventListener('click', saveNote);
+    document.getElementById('clearNote').addEventListener('click', ()=>{ document.getElementById('activityNote').value=''; saveNote(); });
+  }
+  if(id === 'quiz') renderQuizBank();
+  if(id === 'analytics') renderCharts();
+  if(id === 'admin') renderAdmin();
+}
+
+/* -------------------------
+   UI wiring
+   ------------------------- */
+function setupUI(){
+  // nav links
+  document.querySelectorAll('.nav-link').forEach(a=>{
+    a.addEventListener('click', e=>{
+      const t = e.target.getAttribute('data-target');
+      location.hash = '#'+t;
+    });
+  });
+
+  // search & filter
+  document.getElementById('searchInput').addEventListener('input', e=>{
+    // for simplicity re-render cases with filter
+    renderCasesList(e.target.value, document.getElementById('filterSelect').value);
+  });
+  document.getElementById('filterSelect').addEventListener('change', e=>{
+    renderCasesList(document.getElementById('searchInput').value, e.target.value);
+  });
+
+  // quick mission
+  document.getElementById('newMissionQuick').addEventListener('click', ()=>{
+    const t = prompt('빠른 미션 제목을 입력하세요 (예: 텀블러 사용하기)');
+    if(t) addMission(t, 'quick');
+  });
+
+  // export/import
+  document.getElementById('exportBtn').addEventListener('click', exportData);
+  document.getElementById('importBtn').addEventListener('click', importData);
+  document.getElementById('exportBtn2')?.addEventListener('click', exportData);
+  document.getElementById('importBtn2')?.addEventListener('click', importData);
+
+  // auth area
+  renderAuthArea();
+}
+
+/* -------------------------
+   AUTH: simple local users
+   ------------------------- */
+function renderAuthArea(){
+  const area = document.getElementById('authArea');
+  area.innerHTML = '';
+  const container = document.createElement('div');
+  if(CURRENT_USER && CURRENT_USER.id !== 'guest'){
+    // show name and logout
+    const name = document.createElement('span'); name.textContent = CURRENT_USER.name; name.style.color='white'; name.style.marginRight='8px';
+    const btnLogout = document.createElement('button'); btnLogout.className='btn'; btnLogout.textContent='Logout';
+    btnLogout.addEventListener('click', ()=>{ CURRENT_USER = APP.users.find(u=>u.id==='guest') || null; renderAuthArea(); renderRightPanel(); router();});
+    const btnAdmin = document.createElement('button'); btnAdmin.className='btn ghost'; btnAdmin.style.marginLeft='6px'; btnAdmin.textContent='Admin 모드';
+    btnAdmin.addEventListener('click', ()=>{ if(CURRENT_USER.role==='admin') { location.hash='#admin'; } else alert('관리자 전용 기능입니다.'); });
+    container.appendChild(name); container.appendChild(btnAdmin); container.appendChild(btnLogout);
+  } else {
+    // show sign up / login buttons
+    const btnLogin = document.createElement('button'); btnLogin.className='btn'; btnLogin.textContent='Login';
+    btnLogin.addEventListener('click', showLoginModal);
+    const btnSign = document.createElement('button'); btnSign.className='btn ghost'; btnSign.textContent='Sign up';
+    btnSign.addEventListener('click', showSignupModal);
+    container.appendChild(btnLogin); container.appendChild(btnSign);
+  }
+  area.appendChild(container);
+}
+
+/* simple modal for login/signup (native prompt-based for single-file) */
+function showSignupModal(){
+  const id = prompt('사용자 아이디(영문):');
+  if(!id) return;
+  const name = prompt('표시 이름:') || id;
+  const pass = prompt('비밀번호: (교육용, 로컬 저장)');
+  if(!pass) return;
+  if(APP.users.find(u=>u.id===id)) return alert('이미 존재하는 아이디입니다.');
+  const user = {id, name, passHash: sha256(pass), role:'user', points:0, missions:[], notes:''};
+  APP.users.push(user);
+  idbPut(APP).then(()=>{ alert('회원가입 완료. 로그인 상태로 전환됩니다.'); CURRENT_USER = user; renderAuthArea(); renderRightPanel(); router(); updateLocalUsers(); });
+}
+
+function showLoginModal(){
+  const id = prompt('아이디:');
+  if(!id) return;
+  const pass = prompt('비밀번호:');
+  const user = APP.users.find(u=>u.id===id);
+  if(!user) return alert('사용자 없음');
+  if(user.passHash && user.passHash === sha256(pass)){
+    CURRENT_USER = user;
+    renderAuthArea();
+    renderRightPanel();
+    router();
+    updateLocalUsers();
+    alert(`환영합니다, ${user.name}`);
+  } else {
+    alert('인증 실패');
+  }
+}
+
+/* -------------------------
+   Cases (CRUD)
+   ------------------------- */
+function renderCasesList(search='', filter='all'){
+  const container = document.getElementById('casesList') || document.createElement('div');
+  const list = APP.cases.filter(c=>{
+    const matchSearch = search ? (c.title+ ' '+ c.desc).toLowerCase().includes(search.toLowerCase()) : true;
+    const matchFilter = (filter === 'all') ? true : c.tag === filter;
+    return matchSearch && matchFilter;
+  });
+  if(list.length === 0) container.innerHTML = '<p class="muted">조건에 맞는 사례가 없습니다.</p>';
+  else container.innerHTML = list.map(c=>`
+    <div class="case-card">
+      <h3>${c.title}</h3>
+      <div class="case-meta">태그: ${c.tag} · 등록: ${new Date(c.created).toLocaleDateString()}</div>
+      <p>${c.desc}</p>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn" data-id="${c.id}" onclick="openCase('${c.id}')">자세히</button>
+        ${CURRENT_USER && CURRENT_USER.role === 'admin' ? `<button class="btn ghost" onclick="editCase('${c.id}')">편집</button><button class="btn ghost" onclick="removeCase('${c.id}')">삭제</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+  if(!document.getElementById('casesList')) document.getElementById('mainContent').appendChild(container);
+}
+
+function openCase(id){
+  const c = APP.cases.find(x=>x.id===id);
+  if(!c) return alert('사례를 찾을 수 없습니다.');
+  location.hash = '#learn';
+  setTimeout(()=>{
+    const main = document.getElementById('mainContent');
+    main.scrollTo({top:0, behavior:'smooth'});
+    alert(`사례 열기: ${c.title}\n\n(자세한 페이지는 확장 가능)`);
+  }, 100);
+}
+
+function editCase(id){
+  const c = APP.cases.find(x=>x.id===id);
+  if(!c) return;
+  const title = prompt('제목', c.title);
+  const desc = prompt('설명', c.desc);
+  const tag = prompt('태그', c.tag);
+  if(title) { c.title = title; c.desc = desc; c.tag = tag; idbPut(APP).then(()=>{ renderCasesList(); alert('수정 완료'); }); }
+}
+
+function removeCase(id){
+  if(!confirm('정말 삭제하시겠습니까?')) return;
+  APP.cases = APP.cases.filter(x=>x.id!==id);
+  idbPut(APP).then(()=>{ renderCasesList(); alert('삭제되었습니다'); });
+}
+
+/* -------------------------
+   Missions & Points
+   ------------------------- */
+function renderMissionPage(){
+  document.getElementById('missionList').innerHTML = APP.users.map(u=>{
+    const count = u.missions?.length || 0;
+    return `<div style="padding:8px;border-bottom:1px solid #f0f4f3"><b>${u.name}</b> · 포인트:${u.points} · 미션:${count}</div>`
+  }).join('');
+  // local user's missions
+  const localList = document.getElementById('missionList');
+  const html = (CURRENT_USER.missions && CURRENT_USER.missions.length)
+    ? CURRENT_USER.missions.map((m,i)=>`<div style="padding:8px;border:1px solid #eef4f0;margin-bottom:6px;border-radius:8px"><b>${m.title}</b><div class="small">${new Date(m.date).toLocaleString()}</div></div>`).join('')
+    : '<p class="muted">아직 실천이 없습니다.</p>';
+  localList.innerHTML = `<h4>내 실천</h4>${html}`;
+  // wire add button
+  document.getElementById('addMissionBtn').addEventListener('click', ()=>{
+    const title = document.getElementById('missionTitle').value.trim();
+    const type = document.getElementById('missionType').value;
+    if(!title) return alert('미션 제목을 입력하세요.');
+    addMission(title, type);
+    document.getElementById('missionTitle').value = '';
+  });
+}
+
+function addMission(title, type='general'){
+  const mission = {id:genId('m'), title, type, date:Date.now()};
+  CURRENT_USER.missions = CURRENT_USER.missions || [];
+  CURRENT_USER.missions.push(mission);
+  // reward points
+  const gain = (type === 'energy')?15 : (type === 'recycle')?12 : 10;
+  CURRENT_USER.points = (CURRENT_USER.points || 0) + gain;
+  // log
+  APP.activityLog.push({user:CURRENT_USER.id, action:'mission', title, points:gain, date:Date.now()});
+  // persist
+  // update APP.users entry
+  APP.users = APP.users.map(u => u.id === CURRENT_USER.id ? CURRENT_USER : u);
+  idbPut(APP).then(()=>{ renderRightPanel(); renderMissionPage(); updateLocalUsers(); });
+}
+
+/* -------------------------
+   Quiz system
+   ------------------------- */
+function renderQuizBank(){
+  const container = document.getElementById('quizBank');
+  container.innerHTML = '';
+  APP.quizzes.forEach((q, idx)=>{
+    const wrap = document.createElement('div'); wrap.style.marginBottom='12px'; wrap.style.padding='12px'; wrap.style.borderLeft='4px solid #f0f7f5'; wrap.style.borderRadius='8px';
+    wrap.innerHTML = `<div style="font-weight:700">${idx+1}. ${q.q}</div>`;
+    q.opts.forEach((opt,i)=>{
+      const btn = document.createElement('button'); btn.className='quiz-opt'; btn.textContent = opt;
+      btn.addEventListener('click', ()=>{
+        const correct = (i === q.correct);
+        btn.classList.add(correct?'correct':'wrong');
+        // mark others
+        Array.from(wrap.querySelectorAll('.quiz-opt')).forEach(b=>{ b.disabled = true; });
+        // feedback
+        alert(correct ? '정답입니다! 포인트 +5' : '틀렸습니다. 정답을 확인해보세요.');
+        if(correct){
+          CURRENT_USER.points = (CURRENT_USER.points||0) + 5;
+          APP.activityLog.push({user:CURRENT_USER.id, action:'quiz', q:q.q, points:5, date:Date.now()});
+          APP.users = APP.users.map(u => u.id === CURRENT_USER.id ? CURRENT_USER : u);
+          idbPut(APP).then(()=>{ renderRightPanel(); updateLocalUsers(); });
+        }
+      });
+      wrap.appendChild(btn);
+    });
+    container.appendChild(wrap);
+  });
+}
+
+/* -------------------------
+   Admin: content creation
+   ------------------------- */
+function renderAdmin(){
+  // fill admin lists
+  const adminLists = document.getElementById('adminLists');
+  adminLists.innerHTML = '<h3>콘텐츠 목록</h3>';
+  adminLists.innerHTML += `<h4>사례(${APP.cases.length})</h4>` + APP.cases.map(c=>`<div style="padding:8px;border-bottom:1px solid #eef4f3">${c.title} · ${c.tag} <button class="btn ghost" onclick="removeCase('${c.id}')">삭제</button></div>`).join('');
+  adminLists.innerHTML += `<h4 style="margin-top:8px">퀴즈(${APP.quizzes.length})</h4>` + APP.quizzes.map(q=>`<div style="padding:8px;border-bottom:1px solid #eef4f3">${q.q} <button class="btn ghost" onclick="removeQuiz('${q.id}')">삭제</button></div>`).join('');
+
+  document.getElementById('createCase').addEventListener('click', ()=>{
+    const title = document.getElementById('caseTitle').value.trim();
+    const desc = document.getElementById('caseDesc').value.trim();
+    const tag = document.getElementById('caseTag').value;
+    if(!title||!desc) return alert('제목과 설명을 입력하세요.');
+    APP.cases.unshift({id:genId('case'), title, desc, tag, created:Date.now()});
+    idbPut(APP).then(()=>{ alert('사례 추가됨'); renderAdmin(); renderCasesList(); });
+  });
+
+  document.getElementById('createQuiz').addEventListener('click', ()=>{
+    const q = document.getElementById('qText').value.trim();
+    const opts = [document.getElementById('qOpt1').value, document.getElementById('qOpt2').value, document.getElementById('qOpt3').value, document.getElementById('qOpt4').value];
+    const corr = parseInt(document.getElementById('qCorrect').value,10);
+    if(!q || opts.some(o=>!o)) return alert('질문과 모든 옵션을 입력하세요.');
+    APP.quizzes.unshift({id:genId('q'), q, opts, correct:corr});
+    idbPut(APP).then(()=>{ alert('퀴즈 추가됨'); renderAdmin(); renderQuizBank(); });
+  });
+}
+
+function removeQuiz(id){
+  if(!confirm('삭제하시겠습니까?')) return;
+  APP.quizzes = APP.quizzes.filter(x=>x.id!==id);
+  idbPut(APP).then(()=>{ renderAdmin(); alert('삭제 완료'); });
+}
+
+/* -------------------------
+   Right panel: render user & charts
+   ------------------------- */
+function renderRightPanel(){
+  document.getElementById('userAvatar').textContent = CURRENT_USER ? (CURRENT_USER.name[0] || 'U') : 'G';
+  document.getElementById('userName').textContent = CURRENT_USER ? CURRENT_USER.name : '비로그인';
+  document.getElementById('userRole').textContent = CURRENT_USER ? CURRENT_USER.role : '게스트';
+  document.getElementById('pointVal').textContent = (CURRENT_USER && CURRENT_USER.points) ? CURRENT_USER.points : 0;
+  document.getElementById('rankVal').textContent = rankByPoints((CURRENT_USER && CURRENT_USER.points) || 0);
+  document.getElementById('miniMissions').innerHTML = (CURRENT_USER && CURRENT_USER.missions && CURRENT_USER.missions.length) ? CURRENT_USER.missions.slice(-3).map(m=>`<div>${m.title}</div>`).join('') : '<div class="muted">실천이 없습니다</div>';
+  // local users list
+  updateLocalUsers();
+}
+
+/* compute rank by points */
+function rankByPoints(p){
+  if(p >= 200) return 'Eco Legend';
+  if(p >= 100) return 'Eco Master';
+  if(p >= 50) return 'Green Leader';
+  return 'Eco Starter';
+}
+
+/* -------------------------
+   Charts
+   ------------------------- */
+let pointsChart=null, weeklyChart=null;
+function bootstrapCharts(){
+  const ctx = document.getElementById('activityChart').getContext('2d');
+  weeklyChart = new Chart(ctx, {
+    type:'bar',
+    data:{labels:['월','화','수','목','금','토','일'], datasets:[{label:'활동(예시)', data:[0,0,0,0,0,0,0], backgroundColor:'#52b788'}]},
+    options:{responsive:true, maintainAspectRatio:false}
+  });
+}
+
+function renderCharts(){
+  // Points distribution (top 6 users)
+  const users = APP.users.slice().sort((a,b)=> (b.points||0)-(a.points||0));
+  const top = users.slice(0,6);
+  const labels = top.map(u=>u.name);
+  const data = top.map(u=>u.points||0);
+  const ctx = document.getElementById('pointsChart').getContext('2d');
+  if(window.pointsChart) window.pointsChart.destroy();
+  window.pointsChart = new Chart(ctx, {
+    type:'doughnut',
+    data:{labels, datasets:[{label:'Points', data, backgroundColor:['#1e6f5c','#52b788','#8dd3b4','#c7f0dc','#e1f7ef','#f0fff6']}]},
+    options:{responsive:true}
+  });
+
+  // weekly activity: aggregate APP.activityLog dates
+  const days = [0,0,0,0,0,0,0];
+  const now = new Date();
+  APP.activityLog.forEach(a=>{
+    const d = new Date(a.date);
+    const diff = (now - d)/(1000*60*60*24);
+    if(diff < 7){
+      const idx = 6 - Math.floor(diff);
+      days[idx] += 1;
+    }
+  });
+  const ctx2 = document.getElementById('weeklyChart').getContext('2d');
+  if(window.weeklyChart) window.weeklyChart.destroy();
+  window.weeklyChart = new Chart(ctx2, {
+    type:'line',
+    data:{labels:['6일 전','5일 전','4일 전','3일 전','2일 전','어제','오늘'], datasets:[{label:'활동수', data:days, borderColor:'#1e6f5c', backgroundColor:'rgba(82,183,136,0.15)', fill:true}]},
+    options:{responsive:true}
+  });
+}
+
+/* -------------------------
+   Data Export / Import
+   ------------------------- */
+function exportData(){
+  const data = JSON.stringify(APP, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = `EcoHistory_backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(){
+  const input = document.createElement('input'); input.type='file'; input.accept='.json';
+  input.addEventListener('change', async e=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const text = await file.text();
+    try{
+      const parsed = JSON.parse(text);
+      if(!parsed.id) return alert('유효하지 않은 파일입니다.');
+      // merge strategy: overwrite APP
+      if(confirm('데이터를 가져오면 현재 로컬 데이터가 덮어씌워집니다. 계속 진행할까요?')){
+        await idbPut(parsed);
+        APP = parsed;
+        // ensure guest user exists
+        CURRENT_USER = APP.users[0] || null;
+        renderAuthArea(); renderRightPanel(); router(); alert('데이터 가져오기 완료');
+      }
+    }catch(err){
+      alert('파일 파싱 실패: '+err.message);
+    }
+  });
+  input.click();
+}
+
+/* -------------------------
+   Admin helpers & misc
+   ------------------------- */
+function updateLocalUsers(){
+  const el = document.getElementById('localUsers');
+  el.innerHTML = APP.users.map(u=>`${u.name} (${u.id}) · ${u.points||0}점`).join('<br>');
+}
+
+/* -------------------------
+   Activity note save
+   ------------------------- */
+function saveNote(){
+  const val = document.getElementById('activityNote').value;
+  CURRENT_USER.notes = val;
+  APP.users = APP.users.map(u=> u.id === CURRENT_USER.id ? CURRENT_USER : u);
+  idbPut(APP).then(()=> alert('노트 저장됨'));
+}
+
+/* -------------------------
+   Utility: remove all & re-render
+   ------------------------- */
+function refreshAll(){
+  renderRightPanel();
+  renderCasesList();
+  renderMissionPage();
+  renderQuizBank();
+  updateLocalUsers();
+}
+
+/* -------------------------
+   Simple helpers
+   ------------------------- */
+function startClock(){
+  const el = document.getElementById('appClock');
+  function tick(){ el.textContent = new Date().toLocaleString(); }
+  tick(); setInterval(tick,1000);
+}
+
+/* -------------------------
+   Initial run
+   ------------------------- */
+initApp();
+
+/* expose some functions to window for inline event handlers */
+window.openCase = openCase;
+window.editCase = editCase;
+window.removeCase = removeCase;
+window.removeQuiz = removeQuiz;
+
+</script>
+</body>
+</html>
